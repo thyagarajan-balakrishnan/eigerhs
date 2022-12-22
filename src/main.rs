@@ -2,9 +2,7 @@
 * Eiger coding challenge
 */
 
-use std::error::Error;
 use std::io;
-use std::result::Result;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
@@ -78,56 +76,37 @@ async fn bind_port() -> io::Result<(TcpListener, u16)> {
     }
 }
 
+async fn read_line(s: &mut BufReader<TcpStream>) -> io::Result<()> {
+    let mut buf = String::new();
+    s.read_line(&mut buf).await?;
+    print!("{buf}");
+    Ok(())
+}
+
 // Initiate handshake
-async fn do_handshake(s: TcpStream) -> Result<(), Box<dyn Error>> {
+async fn do_handshake(s: TcpStream) -> io::Result<()> {
     // Wrap the stream in BufReader so read_line can be used
     let mut s = BufReader::new(s);
 
     s.write_all(b"1. Hello! Here are my encryption methods.\n")
         .await?;
-
-    let mut buf = String::new();
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
+    read_line(&mut s).await?;
     s.write_all(b"3. Here is encrypted secret-key.\n").await?;
-
-    buf.clear();
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
+    read_line(&mut s).await?;
     s.write_all(b"5. This is encrypted sample message.\n")
         .await?;
-
-    buf.clear();
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
-    Ok(())
+    read_line(&mut s).await
 }
 
 // Process incoming handshake request
 async fn process_incoming(s: TcpStream) -> io::Result<()> {
     // Wrap the stream in BufReader so read_line can be used
     let mut s = BufReader::new(s);
-    let mut buf = String::new();
 
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
+    read_line(&mut s).await?;
     s.write_all(b"2. Hello! Here is my public key\n").await?;
-
-    buf.clear();
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
+    read_line(&mut s).await?;
     s.write_all(b"4. Got secret-key.\n").await?;
-
-    buf.clear();
-    s.read_line(&mut buf).await?;
-    println!("{buf}");
-
-    s.write_all(b"6. Verified sample msg. All OK.\n").await?;
-
-    Ok(())
+    read_line(&mut s).await?;
+    s.write_all(b"6. Verified sample msg. All OK.\n").await
 }
